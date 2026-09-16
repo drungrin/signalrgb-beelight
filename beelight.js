@@ -19,7 +19,11 @@ export function Type() { return "serial"; }
 export function Publisher() { return "headless-lights"; }
 export function VendorId() { return 0x2e3c; }
 export function ProductId() { return 0x5740; }
-export function DeviceType() { return "ledstrip"; }
+// Not "ledstrip": SignalRGB rejects it. DiscoverableDevice::StringToType
+// accepts only keyboard, mouse, gpu, dongle, motherboard, lightingcontroller,
+// headphones, lcd, wifi, microphone, aio, ram, case, speakers, mousepad and
+// other, and an unknown value kills the plugin before Initialize() runs.
+export function DeviceType() { return "lightingcontroller"; }
 export function Size() { return [DEFAULT_LED_COUNT, 1]; }
 export function DefaultPosition() { return [0, 0]; }
 export function DefaultScale() { return 4.0; }
