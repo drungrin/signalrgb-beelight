@@ -569,8 +569,16 @@ export function Initialize() {
 	if (!ok) {
 		state = STATE_FAILED;
 		retryAt = now() + RETRY_DELAY_MS;
+		log("handshake failed; retrying from Render()");
 	}
-	return ok;
+	// Always true, even when the handshake failed. Reporting failure here makes
+	// SignalRGB tear the device down, and the teardown closes the port out from
+	// under the retry. Measured on the strip: the first handshake after opening
+	// the port lost its PC-mode acknowledgement, the Render() retry completed
+	// 2.8 s later, and the device was stopped anyway. None of the plugins that
+	// ship with SignalRGB return false from Initialize(); they all recover in
+	// Render(), and so does this one.
+	return true;
 }
 
 export function Render() {
