@@ -340,6 +340,13 @@ let lastSendAt = 0;
 
 function now() { return Date.now(); }
 
+// device.log() alone goes to the developer console only; the shipped plugins
+// pass toFile for anything worth reading after the fact. Everything this plugin
+// logs is a diagnostic, so all of it is worth writing down.
+function log(message) {
+	device.log("Beelight: " + message, { toFile: true });
+}
+
 function readBytes(timeoutMs) {
 	const data = Serial.read(READ_CHUNK, timeoutMs);
 	if (!data || data.length === 0) {
@@ -439,7 +446,7 @@ function handshake() {
 		Serial.disconnect();
 	}
 	if (!Serial.connect(SERIAL_OPTIONS)) {
-		device.log("Beelight: serial connect failed");
+		log("serial connect failed");
 		return false;
 	}
 
@@ -448,7 +455,7 @@ function handshake() {
 
 	if (requestWithAck(function () { return encodeFrame(COMMAND_FIRMWARE, []); },
 		COMMAND_FIRMWARE) === null) {
-		device.log("Beelight: no firmware response");
+		log("no firmware response");
 		return false;
 	}
 
@@ -457,22 +464,22 @@ function handshake() {
 		COMMAND_SYNC_CONFIG,
 	);
 	if (config === null) {
-		device.log("Beelight: no sync-config response");
+		log("no sync-config response");
 		return false;
 	}
 	const parsed = parseSyncConfig(config.data);
 	if (parsed === null) {
-		device.log("Beelight: unusable sync-config; keeping " + ledCount + " LEDs");
+		log("unusable sync-config; keeping " + ledCount + " LEDs");
 	} else {
 		ledCount = parsed.totalPixels;
 	}
 
 	if (requestWithAck(workModeFrame, COMMAND_CONTROL) === null) {
-		device.log("Beelight: PC mode was not acknowledged");
+		log("PC mode was not acknowledged");
 		return false;
 	}
 	if (requestWithAck(function () { return switchFrame(true); }, COMMAND_CONTROL) === null) {
-		device.log("Beelight: switch-on was not acknowledged");
+		log("switch-on was not acknowledged");
 		return false;
 	}
 	// Best effort: the strip already lights without it, so a missed
@@ -483,6 +490,7 @@ function handshake() {
 	);
 
 	state = STATE_READY;
+	log("ready on " + ledCount + " LEDs");
 	return true;
 }
 
@@ -552,6 +560,7 @@ export function Initialize() {
 
 	device.setName("Beelight V3");
 	device.setFrameRateTarget(30);
+	log("Initialize() entered");
 
 	const ok = handshake();
 	// Publish the LEDs either way. A failed handshake should leave a device that
@@ -594,7 +603,7 @@ export function Render() {
 	writeFrame(pixelsFrame(readCanvas()));
 
 	if (writeFailures >= MAX_WRITE_FAILURES) {
-		device.log("Beelight: serial writes failing; reconnecting");
+		log("serial writes failing; reconnecting");
 		disconnect();
 		retryAt = now() + RETRY_DELAY_MS;
 		return;
