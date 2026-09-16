@@ -337,6 +337,7 @@ let retryAt = 0;
 let writeFailures = 0;
 let frameRatePinned = false;
 let lastSendAt = 0;
+let streaming = false;
 
 function now() { return Date.now(); }
 
@@ -557,6 +558,7 @@ export function Initialize() {
 	writeFailures = 0;
 	frameRatePinned = false;
 	lastSendAt = 0;
+	streaming = false;
 
 	device.setName("Beelight V3");
 	device.setFrameRateTarget(30);
@@ -609,6 +611,10 @@ export function Render() {
 	lastSendAt = now();
 
 	writeFrame(pixelsFrame(readCanvas()));
+	if (!streaming) {
+		streaming = true;
+		log("streaming " + ledCount + " LEDs");
+	}
 
 	if (writeFailures >= MAX_WRITE_FAILURES) {
 		log("serial writes failing; reconnecting");
@@ -625,6 +631,7 @@ export function Render() {
 }
 
 export function Shutdown() {
+	log("Shutdown(): releasing the port");
 	if (state === STATE_READY) {
 		const color = hexToRgb(shutdownColor);
 		const colors = new Array(ledCount);
